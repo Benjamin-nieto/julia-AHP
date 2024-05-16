@@ -110,6 +110,12 @@ function main()
     
     # Mostrar matrices de comparación individuales para cada alternativa
     println("Matrices de comparación individuales para cada alternativa:")
+
+    for x in 1:criteria_counts
+        println("Ingrese el valor ")
+    end
+
+
     for (i, matrix) in enumerate(comparison_matrices)
         println("Matriz de comparación para el criterio $i:")
         println(matrix)
@@ -124,5 +130,3 @@ end
 
 # Llamar a la función principal
 main()
-
-
