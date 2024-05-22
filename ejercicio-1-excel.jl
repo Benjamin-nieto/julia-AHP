@@ -68,26 +68,66 @@ function calcular_Nmax(vector_pesos_ponderados)
     # Calcular Nmax sumando 1 al índice (ya que los índices en Julia comienzan desde 1)
     Nmax = Nmax_indice[1]
     
-    return Nmax
+    return round(Nmax,digits=4)
 end
 
-function calcular_peso_compuesto(vector_pesos_matriz, vector_peso_alternativas_normis)
-    # Inicializar el peso compuesto como un vector de ceros del tamaño del vector de pesos de la matriz
-    peso_compuesto = zeros(length(vector_pesos_matriz))
+function calcular_peso_compuesto(vector_pesos_criterios, vector_peso_alternativas_normis)
+    # Inicializar el peso compuesto como un vector de ceros del tamaño de las alternativas
+    n_alternativas = size(first(values(vector_peso_alternativas_normis)), 1)
+    peso_compuesto = zeros(n_alternativas)
     
-    # Iterar sobre el diccionario de pesos relativos de criterios
-    for (criterio, matriz_pesos_criterio) in vector_peso_alternativas_normis
-        # Multiplicar la matriz de pesos relativos del criterio por el vector de pesos relativos de la matriz
-        peso_compuesto .+= matriz_pesos_criterio * vector_pesos_matriz
+    # Obtener los nombres de los criterios en el diccionario
+    criterios = sort(collect(keys(vector_peso_alternativas_normis)))
+    
+    # Iterar sobre los criterios y calcular el peso compuesto
+    for (i, criterio) in enumerate(criterios)
+        vector_pesos_alternativas = vector_peso_alternativas_normis[criterio]
+        peso_criterio = vector_pesos_criterios[i]
+        peso_compuesto .+= peso_criterio .* vector_pesos_alternativas
     end
-    
-    # Normalizar el peso compuesto para que sume 1
-    peso_compuesto ./= sum(peso_compuesto)
     
     return peso_compuesto
 end
 
 
+function calcular_indice_consistencia(Nmax, n; precision=4)
+    CI = round((Nmax - n) / (n - 1), digits=precision)
+    return round(CI, digits=precision)
+end
+
+function calcular_relacion_consistencia(CI, n; precision=4)
+    # Índice de Aleatoriedad (RI) basado en el tamaño de la matriz n
+    RI_table = Dict(1 => 0.00, 2 => 0.00, 3 => 0.58, 4 => 0.90, 5 => 1.12, 6 => 1.24, 7 => 1.32, 8 => 1.41, 9 => 1.45, 10 => 1.49)
+    RI = RI_table[n]
+    
+    # Calcular la Relación de Consistencia (CR)
+    CR = CI / RI
+    return round(CR, digits=precision)
+end
+
+function calcular_RI(CI, n)
+    # Índice de Aleatoriedad (RI) basado en el tamaño de la matriz n
+    RI_table = Dict(1 => 0.00, 2 => 0.00, 3 => 0.58, 4 => 0.90, 5 => 1.12, 6 => 1.24, 7 => 1.32, 8 => 1.41, 9 => 1.45, 10 => 1.49)
+    RI = RI_table[n]
+    return RI
+end
+
+
+function encontrar_mayor(vector)
+    if isempty(vector)
+        return NaN  # Si el vector está vacío, retorna NaN (Not a Number)
+    end
+    
+    max_valor = vector[1]  # Inicializa el máximo valor con el primer elemento del vector
+    for valor in vector
+        if valor > max_valor
+            max_valor = valor  # Actualiza el máximo valor si encontramos uno más grande
+        end
+    end
+    
+    return max_valor
+end
+#################################################################################
 # Ejemplo de uso
 ruta_archivo = "documento/matriz_comparacion-alternativasnombre.xlsx"
 matriz_comparacion, matrices_alternativas = leer_matrices_excel(ruta_archivo)
@@ -146,7 +186,18 @@ println(vector_pesos_ponderados)
 Nmax = calcular_Nmax(vector_pesos_ponderados)
 println("Nmax: ", Nmax)
 
+##calcular CI
+n = size(matriz_comparacion, 1)
+CI = calcular_indice_consistencia(Nmax, n, precision=4)
+CR = calcular_relacion_consistencia(CI, n, precision=4)
+RI = calcular_RI(CI,n)
+println("Índice de Consistencia (CI): ", CI  )
+println("Relación de Consistencia (CR): ", CR )
+println("Índice de Aleatoriedad (RI): ", RI)
 ##
 peso_compuesto = calcular_peso_compuesto(vector_pesos, vector_peso_alternativas_normis)
 println("Peso Compuesto:")
 println(peso_compuesto)
+
+max_peso = encontrar_mayor(peso_compuesto)
+println("La decisión más óptima es la correspontiente al peso compuesto de: ", max_peso)
